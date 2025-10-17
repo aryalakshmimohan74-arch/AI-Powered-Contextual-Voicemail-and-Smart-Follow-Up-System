@@ -1,0 +1,79 @@
+#Record and Transcribe Voicemail
+from flask import Flask, request
+from twilio.twiml.voice_response import VoiceResponse
+from twilio.rest import Client
+
+app = Flask(__name__)
+
+@app.route('/record', methods=['POST'])
+def record():
+    response = VoiceResponse()
+    if 'RecordingSid' not in request.form:
+        response.say("Hello, please leave your message after the tone.")
+        response.record(max_length=30, transcribe_callback='/message')
+    else:
+        response.hangup()
+    return str(response)
+
+@app.route('/message', methods=['POST'])
+def message():
+    client = Client('<ACCOUNT_SID>', '<AUTH_TOKEN>')
+    transcription = client.transcriptions.list(limit=1)[0]
+    text = transcription.transcription_text
+    print("Voicemail Text:", text)
+    # Send confirmation SMS
+    client.messages.create(
+        body=f"Voicemail received: {text}",
+        from_='<TWILIO_NUMBER>',
+        to='<YOUR_PHONE>'
+    )
+    return "OK"
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+#Add AI Context Understanding
+from transformers import pipeline
+
+def analyze_context(transcript):
+    sentiment_analyzer = pipeline('sentiment-analysis')
+    classifier = pipeline('zero-shot-classification', model='facebook/bart-large-mnli')
+
+    sentiment = sentiment_analyzer(transcript)[0]
+    intent = classifier(transcript, candidate_labels=['complaint','inquiry','callback','thank you'])
+
+    return sentiment, intent
+
+transcript = "Hi, I want to discuss an issue with my recent order. Please call me back."
+sentiment, intent = analyze_context(transcript)
+print("Sentiment:", sentiment)
+print("Intent:", intent)
+
+#Automate Smart Follow-Up Actions
+import smtplib
+from email.mime.text import MIMEText
+
+def send_followup(email, transcript, sentiment, intent):
+    msg_body = f"Voicemail: {transcript}\nSentiment: {sentiment['label']} ({sentiment['score']:.2f})\nIntent: {intent['labels'][0]}"
+    msg = MIMEText(msg_body)
+    msg['Subject'] = 'New Voicemail Follow-Up'
+    msg['From'] = 'bot@yourdomain.com'
+    msg['To'] = email
+
+    with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+        smtp.starttls()
+        smtp.login('bot@yourdomain.com', '<EMAIL_PASSWORD>')
+        smtp.send_message(msg)
+
+send_followup('team@yourdomain.com', transcript, sentiment, intent)
+
+#Optional — Use Whisper or AssemblyAI for Better Accuracy
+import whisper
+
+model = whisper.load_model('base')
+result = model.transcribe('voicemail.wav')
+print("Transcribed text:", result['text'])
+
+
