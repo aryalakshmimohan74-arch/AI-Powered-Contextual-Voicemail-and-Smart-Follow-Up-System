@@ -1,0 +1,19 @@
+Step 6. Integrate End-to-End Workflow
+Combine components into a full pipeline:
+
+Twilio webhook records voicemail.
+
+Speech-to-text model transcribes it.
+
+NLP pipeline classifies sentiment and intent.
+
+Automation module sends email or SMS.
+
+(Optional) Dashboard logs all interactions for tracking.
+
+Step 7. Test and Deploy
+Use Ngrok to tunnel your Flask server during local testing.
+
+Register your webhook URL in Twilio’s console.
+
+Deploy on a small cloud instance (Heroku, Render, or AWS EC2).
