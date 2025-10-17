@@ -1,0 +1,8 @@
+pip install flask twilio openai-whisper transformers torch librosa requests
+pip install pyaudio
+pip install assemblyai
+pip install spacy
+pip install pyngrok
+
+pip install deepspeech
+pip install SpeechRecognition[google-cloud]
